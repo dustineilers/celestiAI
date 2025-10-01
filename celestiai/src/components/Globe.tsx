@@ -18,7 +18,8 @@ export type SatelliteElements = {
 
 type Props = {
   satellites: SatelliteElements[];
-  simTime: number; // simulation clock (seconds)
+  simTime: number;   // simulation clock (seconds)
+  timeScale?: number; // speed multiplier (default = 1)
 };
 
 const MU_EARTH = 398600.4418; // km^3 / s^2
@@ -118,36 +119,24 @@ const EarthMesh: React.FC = () => {
   );
 
   return (
-    <>
-      <mesh>
-        <sphereGeometry args={[SCENE_EARTH_RADIUS, 64, 64]} />
-        <meshPhongMaterial
-          map={colorTex}
-          bumpMap={bumpTex}
-          bumpScale={0.03}
-          specularMap={specTex}
-          specular={new THREE.Color("grey")}
-          shininess={10}
-        />
-      </mesh>
-      <mesh>
-        <sphereGeometry args={[SCENE_EARTH_RADIUS * 1.01, 64, 64]} />
-        <meshPhongMaterial
-          map={new THREE.TextureLoader().load(
-            "https://threejs.org/examples/textures/earthcloudmap.jpg"
-          )}
-          transparent
-          opacity={0.5}
-          depthWrite={false}
-        />
-      </mesh>
-    </>
+    <mesh>
+      <sphereGeometry args={[SCENE_EARTH_RADIUS, 64, 64]} />
+      <meshPhongMaterial
+        map={colorTex}
+        bumpMap={bumpTex}
+        bumpScale={0.03}
+        specularMap={specTex}
+        specular={new THREE.Color("grey")}
+        shininess={10}
+      />
+    </mesh>
   );
 };
 
-const MovingSatellite: React.FC<{ sat: SatelliteElements; simTime: number }> = ({
+const MovingSatellite: React.FC<{ sat: SatelliteElements; simTime: number; timeScale: number }> = ({
   sat,
   simTime,
+  timeScale,
 }) => {
   const ref = useRef<THREE.Mesh>(null);
 
@@ -160,7 +149,7 @@ const MovingSatellite: React.FC<{ sat: SatelliteElements; simTime: number }> = (
         sat.raanDeg,
         sat.argPerigeeDeg,
         sat.trueAnomalyDeg,
-        simTime
+        simTime * timeScale // scaled time
       );
       ref.current.position.copy(pos);
     }
@@ -169,10 +158,7 @@ const MovingSatellite: React.FC<{ sat: SatelliteElements; simTime: number }> = (
   return (
     <mesh ref={ref}>
       <sphereGeometry args={[0.06, 12, 12]} />
-      <meshStandardMaterial
-        color={sat.color ?? "red"}
-        emissive={sat.color ?? "red"}
-      />
+      <meshStandardMaterial color={sat.color ?? "red"} emissive={sat.color ?? "red"} />
     </mesh>
   );
 };
@@ -192,7 +178,7 @@ const OrbitLine: React.FC<{ sat: SatelliteElements }> = ({ sat }) => {
   return <Line points={points} color={sat.color ?? "cyan"} lineWidth={1} />;
 };
 
-const Globe: React.FC<Props> = ({ satellites, simTime }) => {
+const Globe: React.FC<Props> = ({ satellites, simTime, timeScale = 1 }) => {
   return (
     <div
       style={{
@@ -214,7 +200,7 @@ const Globe: React.FC<Props> = ({ satellites, simTime }) => {
         {satellites.map((s) => (
           <React.Fragment key={s.id}>
             <OrbitLine sat={s} />
-            <MovingSatellite sat={s} simTime={simTime} />
+            <MovingSatellite sat={s} simTime={simTime} timeScale={timeScale} />
           </React.Fragment>
         ))}
 

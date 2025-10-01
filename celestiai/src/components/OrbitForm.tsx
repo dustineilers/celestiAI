@@ -1,3 +1,4 @@
+// components/OrbitForm.tsx
 import React, { useState } from "react";
 import {
   Dialog,
@@ -7,6 +8,7 @@ import {
   Button,
   TextField,
   Stack,
+  Typography,
 } from "@mui/material";
 
 type OrbitFormProps = {
@@ -46,8 +48,33 @@ const OrbitForm: React.FC<OrbitFormProps> = ({ open, onClose, onSubmit }) => {
   };
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth>
-      <DialogTitle>Add Satellite Orbit</DialogTitle>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: "20px",
+          boxShadow: "0 8px 20px rgba(0,0,0,0.3)",
+          backdropFilter: "blur(12px)",
+          background: "rgba(255, 255, 255, 0.12)",
+          color: "#fff",
+        },
+      }}
+    >
+      <DialogTitle>
+        <Typography
+          variant="h6"
+          sx={{
+            fontWeight: 600,
+            fontFamily: "SF Pro Display, Helvetica, Arial, sans-serif",
+            letterSpacing: "0.02em",
+          }}
+        >
+          ➕ Add Satellite Orbit
+        </Typography>
+      </DialogTitle>
+
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
           <TextField
@@ -55,6 +82,8 @@ const OrbitForm: React.FC<OrbitFormProps> = ({ open, onClose, onSubmit }) => {
             label="Satellite Name"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            InputLabelProps={{ style: { color: "#ddd" } }}
+            InputProps={{ style: { color: "#fff" } }}
           />
           <TextField
             fullWidth
@@ -62,6 +91,8 @@ const OrbitForm: React.FC<OrbitFormProps> = ({ open, onClose, onSubmit }) => {
             type="number"
             value={semiMajorAxis}
             onChange={(e) => setSemiMajorAxis(Number(e.target.value))}
+            InputLabelProps={{ style: { color: "#ddd" } }}
+            InputProps={{ style: { color: "#fff" } }}
           />
           <TextField
             fullWidth
@@ -70,6 +101,8 @@ const OrbitForm: React.FC<OrbitFormProps> = ({ open, onClose, onSubmit }) => {
             value={eccentricity}
             onChange={(e) => setEccentricity(Number(e.target.value))}
             inputProps={{ step: 0.01, min: 0, max: 1 }}
+            InputLabelProps={{ style: { color: "#ddd" } }}
+            InputProps={{ style: { color: "#fff" } }}
           />
           <TextField
             fullWidth
@@ -77,6 +110,8 @@ const OrbitForm: React.FC<OrbitFormProps> = ({ open, onClose, onSubmit }) => {
             type="number"
             value={inclination}
             onChange={(e) => setInclination(Number(e.target.value))}
+            InputLabelProps={{ style: { color: "#ddd" } }}
+            InputProps={{ style: { color: "#fff" } }}
           />
           <TextField
             fullWidth
@@ -84,6 +119,8 @@ const OrbitForm: React.FC<OrbitFormProps> = ({ open, onClose, onSubmit }) => {
             type="number"
             value={raan}
             onChange={(e) => setRaan(Number(e.target.value))}
+            InputLabelProps={{ style: { color: "#ddd" } }}
+            InputProps={{ style: { color: "#fff" } }}
           />
           <TextField
             fullWidth
@@ -91,6 +128,8 @@ const OrbitForm: React.FC<OrbitFormProps> = ({ open, onClose, onSubmit }) => {
             type="number"
             value={argOfPerigee}
             onChange={(e) => setArgOfPerigee(Number(e.target.value))}
+            InputLabelProps={{ style: { color: "#ddd" } }}
+            InputProps={{ style: { color: "#fff" } }}
           />
           <TextField
             fullWidth
@@ -98,12 +137,29 @@ const OrbitForm: React.FC<OrbitFormProps> = ({ open, onClose, onSubmit }) => {
             type="number"
             value={trueAnomaly}
             onChange={(e) => setTrueAnomaly(Number(e.target.value))}
+            InputLabelProps={{ style: { color: "#ddd" } }}
+            InputProps={{ style: { color: "#fff" } }}
           />
         </Stack>
       </DialogContent>
+
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={handleSubmit} variant="contained">
+        <Button onClick={onClose} sx={{ color: "#bbb" }}>
+          Cancel
+        </Button>
+        <Button
+          onClick={handleSubmit}
+          variant="contained"
+          sx={{
+            borderRadius: "12px",
+            textTransform: "none",
+            fontWeight: 600,
+            background: "linear-gradient(135deg, #007aff, #4a90e2)",
+            "&:hover": {
+              background: "linear-gradient(135deg, #0051a8, #357abd)",
+            },
+          }}
+        >
           Add
         </Button>
       </DialogActions>

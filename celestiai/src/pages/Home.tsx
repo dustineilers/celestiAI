@@ -1,53 +1,84 @@
-// pages/index.tsx
+// pages/Home.tsx
 import React, { useState, useEffect } from "react";
-import type { SatelliteElements } from "../components/Globe";
 import Globe from "../components/Globe";
+import type { SatelliteElements } from "../components/Globe";
 import SatelliteMenu from "../components/SatelliteMenu";
 
 const Home: React.FC = () => {
+  const [simTime, setSimTime] = useState(0);
+  const [timeScale, setTimeScale] = useState(1);
+
   // Example satellites
   const [satellites, setSatellites] = useState<SatelliteElements[]>([
     {
       id: 1,
-      name: "Sat-1",
-      semiMajorAxisKm: 7000,
+      name: "Hubble",
+      semiMajorAxisKm: 6871,
       eccentricity: 0.001,
-      inclinationDeg: 53,
-      raanDeg: 120,
+      inclinationDeg: 28.5,
+      raanDeg: 0,
       argPerigeeDeg: 0,
       trueAnomalyDeg: 0,
       color: "red",
     },
     {
       id: 2,
-      name: "Sat-2",
-      semiMajorAxisKm: 10000,
-      eccentricity: 0.05,
-      inclinationDeg: 30,
-      raanDeg: 45,
-      argPerigeeDeg: 90,
+      name: "Starlink",
+      semiMajorAxisKm: 6921,
+      eccentricity: 0.0001,
+      inclinationDeg: 53,
+      raanDeg: 10,
+      argPerigeeDeg: 0,
       trueAnomalyDeg: 180,
-      color: "yellow",
+      color: "blue",
     },
   ]);
 
-  const [simTime, setSimTime] = useState(0);
-
-  // advance simTime every frame
+  // Tick simulation time forward
   useEffect(() => {
-    const start = Date.now();
-    const interval = setInterval(() => {
-      const now = Date.now();
-      setSimTime((now - start) / 1000); // seconds
-    }, 50);
-    return () => clearInterval(interval);
+    let last = performance.now();
+    const tick = () => {
+      const now = performance.now();
+      const dt = (now - last) / 1000; // seconds
+      last = now;
+      setSimTime((t) => t + dt);
+      requestAnimationFrame(tick);
+    };
+    tick();
   }, []);
 
   return (
-    <div style={{ width: "100vw", height: "100vh", overflow: "hidden" }}>
-      <Globe satellites={satellites} simTime={simTime} />
-      <SatelliteMenu satellites={satellites} setSatellites={setSatellites}/>
-    </div>
+    <>
+      <Globe satellites={satellites} simTime={simTime} timeScale={timeScale} />
+      <SatelliteMenu satellites={satellites} setSatellites={setSatellites} />
+
+      {/* Clean time slider overlay */}
+      <div
+        style={{
+          position: "fixed",
+          bottom: "20px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          background: "rgba(0,0,0,0.5)",
+          borderRadius: "10px",
+          padding: "10px 20px",
+          color: "white",
+          textAlign: "center",
+          fontFamily: "sans-serif",
+        }}
+      >
+        <div style={{ marginBottom: "5px" }}>⏱ {timeScale}x</div>
+        <input
+          type="range"
+          min={1}
+          max={1000}
+          step={1}
+          value={timeScale}
+          onChange={(e) => setTimeScale(Number(e.target.value))}
+          style={{ width: "300px" }}
+        />
+      </div>
+    </>
   );
 };
 

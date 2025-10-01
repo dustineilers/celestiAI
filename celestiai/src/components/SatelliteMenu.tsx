@@ -1,3 +1,4 @@
+// components/SatelliteMenu.tsx
 import React, { useState } from "react";
 import {
   Card,
@@ -6,17 +7,13 @@ import {
   Typography,
   Box,
   Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 
-import type { SatelliteElements } from "./Globe"; // ✅ import correct type
+import type { SatelliteElements } from "./Globe";
+import OrbitForm from "./OrbitForm";
 
 type Props = {
   satellites: SatelliteElements[];
@@ -25,46 +22,36 @@ type Props = {
 
 const SatelliteMenu: React.FC<Props> = ({ satellites, setSatellites }) => {
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({
-    name: "",
-    semiMajorAxisKm: 7000,
-    eccentricity: 0,
-    inclinationDeg: 0,
-    raanDeg: 0,
-    argPerigeeDeg: 0,
-    trueAnomalyDeg: 0,
-  });
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: isNaN(Number(value)) ? 0 : Number(value),
-    }));
-  };
-
-  const handleSubmit = () => {
+  const handleAddSatellite = (data: {
+    name: string;
+    semiMajorAxis: number;
+    eccentricity: number;
+    inclination: number;
+    raan: number;
+    argOfPerigee: number;
+    trueAnomaly: number;
+  }) => {
     const newId = satellites.length ? satellites[satellites.length - 1].id + 1 : 1;
 
     const newSat: SatelliteElements = {
       id: newId,
-      name: form.name || `🛰️ NewSat-${newId}`,
-      semiMajorAxisKm: form.semiMajorAxisKm,
-      eccentricity: form.eccentricity,
-      inclinationDeg: form.inclinationDeg,
-      raanDeg: form.raanDeg,
-      argPerigeeDeg: form.argPerigeeDeg,
-      trueAnomalyDeg: form.trueAnomalyDeg,
+      name: data.name || `🛰️ NewSat-${newId}`,
+      semiMajorAxisKm: data.semiMajorAxis,
+      eccentricity: data.eccentricity,
+      inclinationDeg: data.inclination,
+      raanDeg: data.raan,
+      argPerigeeDeg: data.argOfPerigee,
+      trueAnomalyDeg: data.trueAnomaly,
       color: ["red", "blue", "orange", "green", "purple"][
         Math.floor(Math.random() * 5)
       ],
     };
 
     setSatellites((prev) => [...prev, newSat]);
-    handleClose();
   };
 
   const handleDeleteSatellite = (id: number) => {
@@ -140,81 +127,12 @@ const SatelliteMenu: React.FC<Props> = ({ satellites, setSatellites }) => {
         </CardContent>
       </Card>
 
-      {/* Modal for orbital elements */}
-      <Dialog open={open} onClose={handleClose}>
-        <DialogTitle>Add Satellite</DialogTitle>
-        <DialogContent>
-          <TextField
-            margin="dense"
-            label="Name"
-            name="name"
-            fullWidth
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-          />
-          <TextField
-            margin="dense"
-            label="Semi-major Axis (km)"
-            name="semiMajorAxisKm"
-            type="number"
-            fullWidth
-            value={form.semiMajorAxisKm}
-            onChange={handleChange}
-          />
-          <TextField
-            margin="dense"
-            label="Eccentricity"
-            name="eccentricity"
-            type="number"
-            fullWidth
-            inputProps={{ step: 0.01, min: 0, max: 1 }}
-            value={form.eccentricity}
-            onChange={handleChange}
-          />
-          <TextField
-            margin="dense"
-            label="Inclination (deg)"
-            name="inclinationDeg"
-            type="number"
-            fullWidth
-            value={form.inclinationDeg}
-            onChange={handleChange}
-          />
-          <TextField
-            margin="dense"
-            label="RAAN (deg)"
-            name="raanDeg"
-            type="number"
-            fullWidth
-            value={form.raanDeg}
-            onChange={handleChange}
-          />
-          <TextField
-            margin="dense"
-            label="Argument of Perigee (deg)"
-            name="argPerigeeDeg"
-            type="number"
-            fullWidth
-            value={form.argPerigeeDeg}
-            onChange={handleChange}
-          />
-          <TextField
-            margin="dense"
-            label="True Anomaly (deg)"
-            name="trueAnomalyDeg"
-            type="number"
-            fullWidth
-            value={form.trueAnomalyDeg}
-            onChange={handleChange}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose}>Cancel</Button>
-          <Button onClick={handleSubmit} variant="contained">
-            Add
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Orbit Form (shared design) */}
+      <OrbitForm
+        open={open}
+        onClose={handleClose}
+        onSubmit={handleAddSatellite}
+      />
     </Box>
   );
 };
