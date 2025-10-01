@@ -2,11 +2,16 @@
 import React, { useState, useEffect } from "react";
 import Globe from "../components/Globe";
 import type { SatelliteElements } from "../components/Globe";
-import SatelliteMenu from "../components/SatelliteMenu";
+import Sidebar from "../components/Sidebar";
+import { BODIES } from "../constants/bodies";
+import type { CelestialBody } from "../constants/bodies";
 
 const Home: React.FC = () => {
   const [simTime, setSimTime] = useState(0);
   const [timeScale, setTimeScale] = useState(1);
+
+  // Celestial body (new)
+  const [body, setBody] = useState<CelestialBody>(BODIES[0]); // default Earth
 
   // Example satellites
   const [satellites, setSatellites] = useState<SatelliteElements[]>([
@@ -49,10 +54,18 @@ const Home: React.FC = () => {
 
   return (
     <>
-      <Globe satellites={satellites} simTime={simTime} timeScale={timeScale} />
-      <SatelliteMenu satellites={satellites} setSatellites={setSatellites} />
+      {/* Globe now gets body too */}
+      <Globe satellites={satellites} simTime={simTime} timeScale={timeScale} body={body} />
 
-      {/* Clean time slider overlay */}
+      {/* Sidebar with body + satellites */}
+      <Sidebar
+        satellites={satellites}
+        setSatellites={setSatellites}
+        body={body}
+        setBody={setBody}
+      />
+
+      {/* Time slider overlay */}
       <div
         style={{
           position: "fixed",

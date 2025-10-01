@@ -3,6 +3,7 @@ import React, { useRef, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Stars, Line } from "@react-three/drei";
 import * as THREE from "three";
+import type { CelestialBody } from "../constants/bodies";
 
 export type SatelliteElements = {
   id: number;
@@ -18,15 +19,12 @@ export type SatelliteElements = {
 
 type Props = {
   satellites: SatelliteElements[];
-  simTime: number;   // simulation clock (seconds)
-  timeScale?: number; // speed multiplier (default = 1)
+  simTime: number;
+  timeScale?: number;
+  body: CelestialBody;
 };
 
-const MU_EARTH = 398600.4418; // km^3 / s^2
-const EARTH_RADIUS_KM = 6371;
-const SCENE_EARTH_RADIUS = 2;
-const KM_TO_SCENE = SCENE_EARTH_RADIUS / EARTH_RADIUS_KM;
-
+// --- Solve Kepler's Equation ---
 function solveKepler(M: number, e: number, maxIter = 50, tol = 1e-8) {
   let E = e < 0.8 ? M : Math.PI;
   for (let i = 0; i < maxIter; i++) {
@@ -39,7 +37,10 @@ function solveKepler(M: number, e: number, maxIter = 50, tol = 1e-8) {
   return E;
 }
 
+// --- Orbital Position from Elements ---
 function positionFromElementsAtTime(
+  mu: number,
+  radiusKm: number,
   a: number,
   e: number,
   iDeg: number,
@@ -48,7 +49,7 @@ function positionFromElementsAtTime(
   trueAnom0Deg: number,
   tSinceEpochSec: number
 ) {
-  const n = Math.sqrt(MU_EARTH / Math.pow(a, 3));
+  const n = Math.sqrt(mu / Math.pow(a, 3)); // mean motion
   const i = THREE.MathUtils.degToRad(iDeg);
   const raan = THREE.MathUtils.degToRad(raanDeg);
   const argPeri = THREE.MathUtils.degToRad(argPeriDeg);
@@ -83,6 +84,10 @@ function positionFromElementsAtTime(
 
   const posEci = posPf.applyMatrix4(rot);
 
+  // Scale to scene units
+  const SCENE_RADIUS = 2; // sphere radius in scene
+  const KM_TO_SCENE = SCENE_RADIUS / radiusKm;
+
   return new THREE.Vector3(
     posEci.x * KM_TO_SCENE,
     posEci.y * KM_TO_SCENE,
@@ -90,7 +95,10 @@ function positionFromElementsAtTime(
   );
 }
 
+// --- Build full orbit polyline ---
 function buildOrbitPoints(
+  mu: number,
+  radiusKm: number,
   a: number,
   e: number,
   i: number,
@@ -101,31 +109,34 @@ function buildOrbitPoints(
   const pts: [number, number, number][] = [];
   for (let j = 0; j <= segments; j++) {
     const nu = (j / segments) * 360;
-    const pos = positionFromElementsAtTime(a, e, i, raan, argPeri, nu, 0);
+    const pos = positionFromElementsAtTime(
+      mu,
+      radiusKm,
+      a,
+      e,
+      i,
+      raan,
+      argPeri,
+      nu,
+      0
+    );
     pts.push([pos.x, pos.y, pos.z]);
   }
   return pts;
 }
 
-const EarthMesh: React.FC = () => {
-  const colorTex = new THREE.TextureLoader().load(
-    "https://threejs.org/examples/textures/land_ocean_ice_cloud_2048.jpg"
-  );
-  const bumpTex = new THREE.TextureLoader().load(
-    "https://threejs.org/examples/textures/earthbump1k.jpg"
-  );
-  const specTex = new THREE.TextureLoader().load(
-    "https://threejs.org/examples/textures/earthspec1k.jpg"
-  );
+// --- Central Body Mesh ---
+const BodyMesh: React.FC<{ body: CelestialBody }> = ({ body }) => {
+  const texture = body.texture
+    ? new THREE.TextureLoader().load(body.texture)
+    : null;
 
   return (
     <mesh>
-      <sphereGeometry args={[SCENE_EARTH_RADIUS, 64, 64]} />
+      <sphereGeometry args={[2, 64, 64]} />
       <meshPhongMaterial
-        map={colorTex}
-        bumpMap={bumpTex}
+        map={texture ?? undefined}
         bumpScale={0.03}
-        specularMap={specTex}
         specular={new THREE.Color("grey")}
         shininess={10}
       />
@@ -133,23 +144,27 @@ const EarthMesh: React.FC = () => {
   );
 };
 
-const MovingSatellite: React.FC<{ sat: SatelliteElements; simTime: number; timeScale: number }> = ({
-  sat,
-  simTime,
-  timeScale,
-}) => {
+// --- Moving Satellite ---
+const MovingSatellite: React.FC<{
+  sat: SatelliteElements;
+  simTime: number;
+  timeScale: number;
+  body: CelestialBody;
+}> = ({ sat, simTime, timeScale, body }) => {
   const ref = useRef<THREE.Mesh>(null);
 
   useFrame(() => {
     if (ref.current) {
       const pos = positionFromElementsAtTime(
+        body.mu,
+        body.radiusKm,
         sat.semiMajorAxisKm,
         sat.eccentricity,
         sat.inclinationDeg,
         sat.raanDeg,
         sat.argPerigeeDeg,
         sat.trueAnomalyDeg,
-        simTime * timeScale // scaled time
+        simTime * timeScale
       );
       ref.current.position.copy(pos);
     }
@@ -158,27 +173,37 @@ const MovingSatellite: React.FC<{ sat: SatelliteElements; simTime: number; timeS
   return (
     <mesh ref={ref}>
       <sphereGeometry args={[0.06, 12, 12]} />
-      <meshStandardMaterial color={sat.color ?? "red"} emissive={sat.color ?? "red"} />
+      <meshStandardMaterial
+        color={sat.color ?? "red"}
+        emissive={sat.color ?? "red"}
+      />
     </mesh>
   );
 };
 
-const OrbitLine: React.FC<{ sat: SatelliteElements }> = ({ sat }) => {
+// --- Orbit Line ---
+const OrbitLine: React.FC<{ sat: SatelliteElements; body: CelestialBody }> = ({
+  sat,
+  body,
+}) => {
   const points = useMemo(
     () =>
       buildOrbitPoints(
+        body.mu,
+        body.radiusKm,
         sat.semiMajorAxisKm,
         sat.eccentricity,
         sat.inclinationDeg,
         sat.raanDeg,
         sat.argPerigeeDeg
       ),
-    [sat]
+    [sat, body]
   );
   return <Line points={points} color={sat.color ?? "cyan"} lineWidth={1} />;
 };
 
-const Globe: React.FC<Props> = ({ satellites, simTime, timeScale = 1 }) => {
+// --- Globe Root Component ---
+const Globe: React.FC<Props> = ({ satellites, simTime, timeScale = 1, body }) => {
   return (
     <div
       style={{
@@ -195,12 +220,19 @@ const Globe: React.FC<Props> = ({ satellites, simTime, timeScale = 1 }) => {
         <directionalLight position={[10, 10, 10]} intensity={1.0} />
         <Stars radius={100} depth={50} count={5000} factor={4} fade />
 
-        <EarthMesh />
+        {/* Central Body */}
+        <BodyMesh body={body} />
 
+        {/* Satellites + Orbits */}
         {satellites.map((s) => (
           <React.Fragment key={s.id}>
-            <OrbitLine sat={s} />
-            <MovingSatellite sat={s} simTime={simTime} timeScale={timeScale} />
+            <OrbitLine sat={s} body={body} />
+            <MovingSatellite
+              sat={s}
+              simTime={simTime}
+              timeScale={timeScale}
+              body={body}
+            />
           </React.Fragment>
         ))}
 
