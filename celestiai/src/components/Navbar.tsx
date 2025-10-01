@@ -26,7 +26,7 @@ const Navbar: React.FC = () => {
                         letterSpacing: ".15rem",
                     }}
                 >
-                    CelestiaAI
+                    CelestiAI
                 </Typography>
 
                 <Box>
